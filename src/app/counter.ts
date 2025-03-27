@@ -1,46 +1,34 @@
 'use server'
-import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { headers } from 'next/headers'
 
-// 增加计数并记录访问
+// 방문자 카운터 및 로그 기능 (Vercel 환경용 대체 구현)
 export async function incrementAndLog() {
-  const cf = await getCloudflareContext()
-  const headersList = await headers()
-
-  const { results: countResults } = await cf.env.DB.prepare(
-    'INSERT INTO counters (name, value) VALUES (?, 1) ON CONFLICT (name) DO UPDATE SET value = value + 1 RETURNING value'
-  )
-    .bind('page_views')
-    .all()
-
-  await cf.env.DB.prepare('INSERT INTO access_logs (ip, path, accessed_at) VALUES (?, ?, datetime())')
-    .bind(
-      headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown',
-      headersList.get('x-forwarded-host') || '/'
-    )
-    .run()
-
-  const { results: logs } = await cf.env.DB.prepare('SELECT * FROM access_logs ORDER BY accessed_at DESC LIMIT 5').all()
-
+  const headersList = headers()
+  
+  // Vercel 환경에서는 실제 DB 연동 없이 더미 데이터 반환
   return {
-    count: countResults[0].value,
-    recentAccess: logs
+    count: Math.floor(Math.random() * 100) + 1,
+    recentAccess: [
+      { accessed_at: new Date().toISOString() },
+      { accessed_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
+      { accessed_at: new Date(Date.now() - 1000 * 60 * 10).toISOString() },
+      { accessed_at: new Date(Date.now() - 1000 * 60 * 15).toISOString() },
+      { accessed_at: new Date(Date.now() - 1000 * 60 * 20).toISOString() }
+    ]
   } as { count: number; recentAccess: { accessed_at: string }[] }
 }
 
-// 获取当前计数和最近访问
+// 현재 카운터 및 최근 방문 정보 조회
 export async function getStats() {
-  const cf = await getCloudflareContext()
-  const { results: count } = await cf.env.DB.prepare('SELECT value FROM counters WHERE name = ?')
-    .bind('page_views')
-    .all()
-
-  const { results: logs } = await cf.env.DB.prepare(
-    'SELECT accessed_at FROM access_logs ORDER BY accessed_at DESC LIMIT 5'
-  ).all()
-
+  // Vercel 환경에서는 실제 DB 연동 없이 더미 데이터 반환
   return {
-    count: count[0]?.value || 0,
-    recentAccess: logs
+    count: Math.floor(Math.random() * 100) + 1,
+    recentAccess: [
+      { accessed_at: new Date().toISOString() },
+      { accessed_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
+      { accessed_at: new Date(Date.now() - 1000 * 60 * 10).toISOString() },
+      { accessed_at: new Date(Date.now() - 1000 * 60 * 15).toISOString() },
+      { accessed_at: new Date(Date.now() - 1000 * 60 * 20).toISOString() }
+    ]
   } as { count: number; recentAccess: { accessed_at: string }[] }
 }
